@@ -1,0 +1,12 @@
+@tailwind base;
+
+body {
+    @apply px-4 py-8 bg-very-light-gray font-rubik lg:py-16;
+}
+
+::selection {
+    @apply bg-light-grayish-blue text-moderate-blue;
+}
+
+@tailwind components;
+@tailwind utilities;
