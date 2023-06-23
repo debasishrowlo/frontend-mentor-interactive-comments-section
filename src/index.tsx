@@ -1,8 +1,9 @@
 import React, { FormEvent, useState } from "react"
-import { render } from "react-dom"
+import { createRoot } from "react-dom/client"
 import { useMediaQuery } from 'react-responsive'
 import classnames from "classnames"
 import { Dialog, Transition } from '@headlessui/react'
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 
 import {
   PlusIcon,
@@ -406,6 +407,7 @@ const ReplyForm = ({
 
 const App = () => {
   const [state, setState] = useState(data)
+  console.log({ state });
   const [deleteConfirmationData, setDeleteConfirmationData] = useState<DeleteConfirmationData>(null)
   const [newComment, setNewComment] = useState("")
   const [newReply, setNewReply] = useState("")
@@ -650,75 +652,86 @@ const App = () => {
   const addCommentTextAreaClasses = "w-full px-6 py-3 outline-none border border-light-gray focus:border-moderate-blue placeholder:text-grayish-blue text-dark-blue rounded-lg resize-none transition-colors duration-200 lg:ml-4"
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="space-y-4 lg:space-y-5">
-        {state.comments.map((comment) => (
-          <div key={comment.id}>
-            <Comment
-              comment={comment}
-              askDeleteConfirmation={() => openConfirmationDialog(comment.id)}
-              updateComment={(content:string) => updateComment(comment.id, content)}
-              belongsToCurrentUser={comment.user.username === state.currentUser.username}
-              toggleReplyForm={() => toggleReplyForm(comment.id)}
-              upvoteComment={() => upvoteComment(comment.id)}
-              downvoteComment={() => downvoteComment(comment.id)}
-            />
-            {isReplyFormOpen(comment.id) && (
-              <ReplyForm
-                reply={newReply}
-                currentUsername={state.currentUser.username}
-                setReply={(reply:string) => setNewReply(reply)}
-                createReply={() => createReply()}
-              />
-            )}
-            {comment.replies.length > 0 && (
-              <div className="mt-4 space-y-4 pl-4 border-l-2 border-light-gray lg:ml-10 lg:mt-5 lg:space-y-6 lg:pl-10">
-                {comment.replies.map((reply) => (
-                  <div key={reply.id}>
-                    <Comment
-                      key={reply.id}
-                      comment={reply}
-                      askDeleteConfirmation={() => openConfirmationDialog(comment.id, reply.id)}
-                      updateComment={(content:string) => updateReply(comment.id, reply.id, content)}
-                      belongsToCurrentUser={reply.user.username === state.currentUser.username}
-                      toggleReplyForm={() => toggleReplyForm(comment.id, reply.id)}
-                      upvoteComment={() => upvoteReply(comment.id, reply.id)}
-                      downvoteComment={() => downvoteReply(comment.id, reply.id)}
+    <motion.div className="max-w-3xl mx-auto">
+      <LayoutGroup>
+        <AnimatePresence mode="popLayout">
+          {state.comments.map((comment) => (
+            <motion.div
+              key={comment.id}
+              className="mt-4 lg:mt-5"
+              layout="position"
+              exit={{ opacity: 0 }}
+            >
+              <AnimatePresence mode="popLayout">
+                <motion.div layout>
+                  <Comment
+                    comment={comment}
+                    askDeleteConfirmation={() => openConfirmationDialog(comment.id)}
+                    updateComment={(content:string) => updateComment(comment.id, content)}
+                    belongsToCurrentUser={comment.user.username === state.currentUser.username}
+                    toggleReplyForm={() => toggleReplyForm(comment.id)}
+                    upvoteComment={() => upvoteComment(comment.id)}
+                    downvoteComment={() => downvoteComment(comment.id)}
+                  />
+                </motion.div>
+                {isReplyFormOpen(comment.id) && (
+                  <motion.div 
+                    layout
+                    exit={{ opacity: 0 }}
+                    transition={{ 
+                      opacity: { duration: 2 }
+                    }}
+                  >
+                    <ReplyForm
+                      reply={newReply}
+                      currentUsername={state.currentUser.username}
+                      setReply={(reply:string) => setNewReply(reply)}
+                      createReply={() => createReply()}
                     />
-                    {isReplyFormOpen(comment.id, reply.id) && (
-                      <ReplyForm
-                        reply={newReply}
-                        currentUsername={state.currentUser.username}
-                        setReply={(reply:string) => setNewReply(reply)}
-                        createReply={() => createReply()}
-                      />
-                    )}
+                  </motion.div>
+                )}
+                {comment.replies.length > 0 && (
+                  <div className="mt-4 pl-4 border-l-2 border-light-gray lg:ml-10 lg:mt-5 lg:pl-10">
+                    <AnimatePresence>
+                      {comment.replies.map((reply) => (
+                        <motion.div 
+                          key={reply.id}
+                          className="mt-4 first:mt-0 lg:mt-6"
+                          exit={{ opacity: 0, height: 0, marginTop: 0, }}
+                        >
+                          <Comment
+                            key={reply.id}
+                            comment={reply}
+                            askDeleteConfirmation={() => openConfirmationDialog(comment.id, reply.id)}
+                            updateComment={(content:string) => updateReply(comment.id, reply.id, content)}
+                            belongsToCurrentUser={reply.user.username === state.currentUser.username}
+                            toggleReplyForm={() => toggleReplyForm(comment.id, reply.id)}
+                            upvoteComment={() => upvoteReply(comment.id, reply.id)}
+                            downvoteComment={() => downvoteReply(comment.id, reply.id)}
+                          />
+                          {isReplyFormOpen(comment.id, reply.id) && (
+                            <ReplyForm
+                              reply={newReply}
+                              currentUsername={state.currentUser.username}
+                              setReply={(reply:string) => setNewReply(reply)}
+                              createReply={() => createReply()}
+                            />
+                          )}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      <form 
-        className="mt-4 p-4 bg-white rounded-lg lg:mt-5 lg:p-6"
-        onSubmit={(e) => handleNewCommentFormSubmit(e)}
-      >
-        <Mobile>
-          <textarea
-            rows={4}
-            placeholder="Add a comment..."
-            className={addCommentTextAreaClasses}
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-          ></textarea>
-        </Mobile>
-        <div className="mt-4 flex justify-between items-center lg:mt-0 lg:items-start">
-          <img
-            src={require(`./images/avatars/image-${state.currentUser.username}.png`)}
-            className="w-8 h-8"
-          />
-          <Desktop>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <motion.form
+          layout
+          className="mt-4 p-4 bg-white rounded-lg lg:mt-5 lg:p-6"
+          onSubmit={(e) => handleNewCommentFormSubmit(e)}
+        >
+          <Mobile>
             <textarea
               rows={4}
               placeholder="Add a comment..."
@@ -726,22 +739,39 @@ const App = () => {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
             ></textarea>
-          </Desktop>
-          <button
-            type="submit"
-            className="px-8 py-3 bg-moderate-blue hover:bg-light-grayish-blue font-medium text-white rounded-lg transition-colors duration-200 lg:ml-4"
-          >
-            SEND
-          </button>
-        </div>
-      </form>
+          </Mobile>
+          <div className="mt-4 flex justify-between items-center lg:mt-0 lg:items-start">
+            <img
+              src={require(`./images/avatars/image-${state.currentUser.username}.png`)}
+              className="w-8 h-8"
+            />
+            <Desktop>
+              <textarea
+                rows={4}
+                placeholder="Add a comment..."
+                className={addCommentTextAreaClasses}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              ></textarea>
+            </Desktop>
+            <button
+              type="submit"
+              className="px-8 py-3 bg-moderate-blue hover:bg-light-grayish-blue font-medium text-white rounded-lg transition-colors duration-200 lg:ml-4"
+            >
+              SEND
+            </button>
+          </div>
+        </motion.form>
+      </LayoutGroup>
       <DeleteConfirmationDialog 
         isOpen={deleteConfirmationData !== null} 
         close={() => closeConfirmationDialog()}
         confirmDelete={() => confirmDeleteComment()}
       />
-    </div>
+    </motion.div>
   );
 }
 
-render(<App />, document.getElementById("app"))
+const container = document.getElementById("app")
+const root = createRoot(container)
+root.render(<App />)
